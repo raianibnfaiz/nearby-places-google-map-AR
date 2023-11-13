@@ -44,7 +44,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyC24bOt1EMcm1p9uhsNnaY7FSopFi5-K_0" />
+            android:value="AIzaSyBxeQ3OAnwaRSmDTQ-hoWyeRkIhrzZYXJY" />
 
         <activity
             android:name="com.google.codelabs.findnearbyplacesar.MainActivity"

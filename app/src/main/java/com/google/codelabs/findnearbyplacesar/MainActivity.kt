@@ -33,23 +33,29 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.tasks.OnSuccessListener
+import com.google.ar.core.Anchor
 import com.google.ar.sceneform.AnchorNode
+import com.google.ar.sceneform.math.Vector3
 import com.google.codelabs.findnearbyplacesar.api.NearbyPlacesResponse
 import com.google.codelabs.findnearbyplacesar.api.PlacesService
 import com.google.codelabs.findnearbyplacesar.ar.PlaceNode
 import com.google.codelabs.findnearbyplacesar.ar.PlacesArFragment
 import com.google.codelabs.findnearbyplacesar.model.Place
+import com.google.maps.android.ktx.utils.sphericalHeading
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.lang.Math.cos
+import java.lang.Math.sin
 
-class MainActivity : AppCompatActivity(), SensorEventListener {
+class MainActivity : AppCompatActivity(), SensorEventListener, OnMapReadyCallback {
 
     private val TAG = "MainActivity"
 
@@ -79,7 +85,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             return
         }
         setContentView(R.layout.activity_main)
-
+        Log.d(TAG, "onCreate: Checking AR ")
         arFragment = supportFragmentManager.findFragmentById(R.id.ar_fragment) as PlacesArFragment
 
         mapFragment =
@@ -116,11 +122,26 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         sensorManager.unregisterListener(this)
     }
 
-    private fun setUpAr() {
-        arFragment.setOnTapArPlaneListener { hitResult, _, _ ->
-            // TODO Create anchor here
+   /* private fun setUpAr() {
+        *//*arFragment.setOnTapArPlaneListener { hitResult, _, _ ->
+            val anchor = hitResult.createAnchor()
+            anchorNode = AnchorNode(anchor)
+            anchorNode?.setParent(arFragment.arSceneView.scene)
             addPlaces(anchorNode!!)
-        }
+        }*//*
+
+    }*/
+   private fun setUpAr() {
+       arFragment.setOnTapArPlaneListener { hitResult, _, _ ->
+           val anchor = hitResult.createAnchor()
+           handleAnchor(anchor)
+       }
+   }
+
+    private fun handleAnchor(anchor: Anchor) {
+        anchorNode = AnchorNode(anchor)
+        anchorNode?.setParent(arFragment.arSceneView.scene)
+        addPlaces(anchorNode!!)
     }
 
     private fun addPlaces(anchorNode: AnchorNode) {
@@ -183,7 +204,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private fun setUpMaps() {
         mapFragment.getMapAsync { googleMap ->
-            // TODO set isMyLocationEnabled to true
+            Log.d(TAG, "setUpMaps: Checking SETMAP")
             if (ActivityCompat.checkSelfPermission(
                     this,
                     Manifest.permission.ACCESS_FINE_LOCATION
@@ -192,6 +213,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
+                Log.d(TAG, "setUpMaps: Check permissions")
                 // TODO: Consider calling
                 //    ActivityCompat#requestPermissions
                 // here to request the missing permissions, and then overriding
@@ -240,7 +262,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     }
     private fun getNearbyPlaces(location: Location) {
         // TODO fill in API key
-        val apiKey = "AIzaSyC24bOt1EMcm1p9uhsNnaY7FSopFi5-K_0"
+        val apiKey = "AIzaSyBxeQ3OAnwaRSmDTQ-hoWyeRkIhrzZYXJY"
         placesService.nearbyPlaces(
             apiKey = apiKey,
             location = "${location.latitude},${location.longitude}",
@@ -286,7 +308,39 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent?) {
         // TODO read sensor data
+        if (event == null) {
+            return
+        }
+        if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+            System.arraycopy(event.values, 0, accelerometerReading, 0, accelerometerReading.size)
+        } else if (event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD) {
+            System.arraycopy(event.values, 0, magnetometerReading, 0, magnetometerReading.size)
+        }
+
+        // Update rotation matrix, which is needed to update orientation angles.
+        SensorManager.getRotationMatrix(
+            rotationMatrix,
+            null,
+            accelerometerReading,
+            magnetometerReading
+        )
+        SensorManager.getOrientation(rotationMatrix, orientationAngles)
     }
+    fun Place.getPositionVector(azimuth: Float, latLng: LatLng): Vector3 {
+        val placeLatLng = this.geometry.location.latLng
+        val heading = latLng.sphericalHeading(placeLatLng)
+        val r = -2f
+        val x = r * sin(azimuth + heading).toFloat()
+        val y = 1f
+        val z = r * cos(azimuth + heading).toFloat()
+        return Vector3(x, y, z)
+    }
+
+    override fun onMapReady(googleMap: GoogleMap) {
+        Log.d(TAG, "onMapReady: Check Map")
+
+    }
+
 }
 
 val Location.latLng: LatLng
