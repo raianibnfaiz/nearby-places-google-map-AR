@@ -15,6 +15,7 @@
 package com.google.codelabs.findnearbyplacesar.ar
 
 import android.content.Context
+import android.util.Log
 import android.view.View
 import android.widget.TextView
 import com.google.ar.sceneform.Node
@@ -22,6 +23,7 @@ import com.google.ar.sceneform.rendering.ViewRenderable
 import com.google.codelabs.findnearbyplacesar.R
 import com.google.codelabs.findnearbyplacesar.model.Place
 
+private const val TAG = "PlaceNode"
 class PlaceNode(
     val context: Context,
     val place: Place?
@@ -51,6 +53,7 @@ class PlaceNode(
                 place?.let {
                     textViewPlace = renderable.view.findViewById(R.id.placeName)
                     textViewPlace?.text = it.name
+                    Log.d(TAG, "onActivate: ${it.name}")
                 }
             }
     }
@@ -65,7 +68,7 @@ class PlaceNode(
         this.parent?.children?.filter {
             it is PlaceNode && it != this
         }?.forEach {
-            (it as PlaceNode).textViewPlace?.visibility = View.GONE
+            (it as PlaceNode).textViewPlace?.visibility = View.VISIBLE
         }
     }
 }

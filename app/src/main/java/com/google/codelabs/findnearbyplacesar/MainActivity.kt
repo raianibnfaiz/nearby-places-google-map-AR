@@ -147,6 +147,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 showInfoWindow(place)
             }
 
+
             // Add the place in maps
             map?.let {
                 val marker = it.addMarker(
@@ -211,6 +212,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             }
             googleMap.setOnMarkerClickListener { marker ->
                 val tag = marker.tag
+                Log.d(TAG, "setUpMaps: $tag")
                 if (tag !is Place) {
                     return@setOnMarkerClickListener false
                 }
@@ -270,6 +272,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     }
 
                     val places = response.body()?.results ?: emptyList()
+                    Log.d(TAG, "onResponse: $places")
                     this@MainActivity.places = places
                 }
             }
